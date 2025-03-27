@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.2-fpm
 
 # Instalar dependencias
 RUN apt-get update && apt-get install -y \
@@ -26,32 +26,26 @@ WORKDIR /var/www/html
 # Copiar código del proyecto
 COPY . /var/www/html
 
-# Verificar si composer.json existe y manejar errores con mayor tolerancia
-RUN if [ -f "composer.json" ]; then \
-        composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev || echo "Composer install failed, continuing anyway"; \
-    else \
-        echo "No composer.json found, skipping composer install"; \
+# Instalar dependencias del proyecto
+RUN composer install --no-interaction --prefer-dist --no-dev
+
+# Generar archivo .env si no existe
+RUN if [ ! -f ".env" ]; then \
+    cp .env.example .env || echo "No .env.example file found"; \
     fi
 
-# Intentar generar clave solo si el archivo artisan existe
-RUN if [ -f "artisan" ]; then \
-        php artisan key:generate --force || echo "Key generation failed, continuing anyway"; \
-        php artisan config:cache || echo "Config cache failed, continuing anyway"; \
-        php artisan route:cache || echo "Route cache failed, continuing anyway"; \
-        php artisan view:cache || echo "View cache failed, continuing anyway"; \
-    else \
-        echo "No artisan file found, skipping Laravel commands"; \
-    fi
+# Generar clave de la aplicación
+RUN php artisan key:generate --force
 
-# Configurar permisos si existe la carpeta storage
-RUN if [ -d "storage" ]; then \
-        chmod -R 777 storage bootstrap/cache || echo "Permission setting failed, continuing anyway"; \
-    fi
+# Optimizar configuración para producción
+RUN php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
 
-# Configurar Nginx
-RUN mkdir -p /var/www/html/docker
+# Configurar permisos
+RUN chmod -R 777 storage bootstrap/cache
 
-# Crear configuración de Nginx
+# Configuración de Nginx
 RUN echo 'server { \
     listen 8080; \
     root /var/www/html/public; \
