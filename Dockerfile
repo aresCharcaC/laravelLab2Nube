@@ -34,6 +34,11 @@ RUN if [ ! -f ".env" ]; then \
     cp .env.example .env || echo "No .env.example file found"; \
     fi
 
+# Crear base de datos SQLite
+RUN mkdir -p database
+RUN touch database/database.sqlite
+RUN chmod 777 database/database.sqlite
+
 # Generar clave de la aplicación
 RUN php artisan key:generate --force
 
