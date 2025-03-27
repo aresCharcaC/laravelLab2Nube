@@ -42,6 +42,9 @@ RUN chmod 777 database/database.sqlite
 # Generar clave de la aplicación
 RUN php artisan key:generate --force
 
+# Ejecutar migraciones para crear tablas
+RUN php artisan migrate --force
+
 # Optimizar configuración para producción
 RUN php artisan config:cache && \
     php artisan route:cache && \
